@@ -1,0 +1,2463 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Blogging API",
+    "description": "API for blogging platform with authentication and blog management",
+    "version": "1.0.0"
+  },
+  "host": "localhost:5000",
+  "basePath": "/",
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "securityDefinitions": {
+    "Bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "Enter your bearer token in the format: Bearer <token>"
+    }
+  },
+  "paths": {
+    "/api/auth/signup": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register a new user",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "username": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "username",
+                "email",
+                "password"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User created"
+          },
+          "409": {
+            "description": "Email or username already exists"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login to get access token",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email",
+                "password"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "access_token": {
+                  "type": "string"
+                },
+                "refresh_token": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "username": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          },
+          "403": {
+            "description": "Account not verified"
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh access token using refresh token",
+        "description": "Send refresh token in Authorization header as 'Bearer <refresh_token>'",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New access token issued",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "access_token": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "msg": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password-request": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Request password reset",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password reset email sent if account exists"
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password/{token}": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Validate reset password token",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token is valid"
+          },
+          "400": {
+            "description": "Invalid or expired token"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Reset password with token",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "password": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "password"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password reset successful"
+          },
+          "400": {
+            "description": "Invalid token or missing password"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/blogs": {      "get": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Get all blogs with pagination",
+        "description": "Returns a paginated list of all published blogs, optionally filtered by category.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of blogs per page (default: 10, max: 100)",
+            "minimum": 1,
+            "maximum": 100
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by category"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of blogs",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "blogs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "content": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "category": {
+                        "type": "string"
+                      },
+                      "author": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {
+                      "type": "integer"
+                    },
+                    "per_page": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "pages": {
+                      "type": "integer"
+                    },
+                    "has_next": {
+                      "type": "boolean"
+                    },
+                    "has_prev": {
+                      "type": "boolean"
+                    },
+                    "next_num": {
+                      "type": "integer"
+                    },                    "prev_num": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pagination parameters",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Page must be 1 or greater"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Create a new blog post",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                },                "category": {
+                  "type": "string",
+                  "description": "Blog category (must be one of the predefined categories from /api/blogs/categories)",
+                  "enum": [
+                    "technology", "programming", "web-development", "mobile-development", 
+                    "data-science", "artificial-intelligence", "machine-learning", 
+                    "cybersecurity", "cloud-computing", "devops", "design", "ui-ux", 
+                    "business", "entrepreneurship", "finance", "marketing", "productivity", 
+                    "career", "education", "tutorials", "reviews", "news", "opinion", 
+                    "lifestyle", "health", "travel", "food", "entertainment", "sports", 
+                    "science", "others"
+                  ]
+                },                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "publish": {
+                  "type": "boolean",
+                  "description": "Whether to publish the blog immediately (true) or save as draft (false). Defaults to false."
+                }
+              },
+              "required": [
+                "title",
+                "content"
+              ]
+            }
+          }
+        ],        "responses": {
+          "201": {
+            "description": "Blog post created successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "msg": {
+                  "type": "string",
+                  "example": "Blog created successfully"
+                },
+                "blog": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "content": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "category": {
+                      "type": "string"
+                    },
+                    "is_draft": {
+                      "type": "boolean",
+                      "description": "Indicates whether the blog is saved as draft or published"
+                    }
+                  }
+                }
+              }
+            }
+          },          "400": {
+            "description": "Invalid input - Title/content required or invalid category",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Invalid category. Must be one of: technology, programming, web-development..."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
+    },
+    "/api/blogs/{id}": {
+      "get": {
+        "tags": [
+          "Blogs"
+        ],        "summary": "Get a single blog post by ID with view tracking",
+        "description": "Returns blog post details and automatically tracks a view for authenticated users",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog post details with engagement metrics",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "integer"},
+                "title": {"type": "string"},
+                "content": {"type": "string"},
+                "timestamp": {"type": "string", "format": "date-time"},
+                "category": {"type": "string"},
+                "author": {"type": "string"},
+                "tags": {"type": "array", "items": {"type": "string"}},
+                "view_count": {"type": "integer", "description": "Total number of views"},
+                "likes_count": {"type": "integer", "description": "Total number of likes"}
+              }
+            }
+          },
+          "404": {
+            "description": "Blog not found"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Update a blog post",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                },                "category": {
+                  "type": "string",
+                  "description": "Blog category (must be one of the predefined categories)",
+                  "enum": [
+                    "technology", "programming", "web-development", "mobile-development", 
+                    "data-science", "artificial-intelligence", "machine-learning", 
+                    "cybersecurity", "cloud-computing", "devops", "design", "ui-ux", 
+                    "business", "entrepreneurship", "finance", "marketing", "productivity", 
+                    "career", "education", "tutorials", "reviews", "news", "opinion", 
+                    "lifestyle", "health", "travel", "food", "entertainment", "sports", 
+                    "science", "others"
+                  ]
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "publish": {
+                  "type": "boolean",
+                  "description": "Whether to publish the blog (true) or keep as draft (false)"
+                }
+              }
+            }
+          }
+        ],        "responses": {
+          "200": {
+            "description": "Blog updated successfully"
+          },
+          "400": {
+            "description": "Invalid category",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Invalid category. Must be one of: technology, programming..."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Unauthorized or not owner"
+          },
+          "404": {
+            "description": "Blog not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Delete a blog post",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog deleted"
+          },
+          "403": {
+            "description": "Unauthorized or not owner"
+          },
+          "404": {
+            "description": "Blog not found"
+          }
+        }
+      }
+    },
+    "/api/blogs/search": {
+      "get": {
+        "tags": [
+          "Blogs"
+        ],        "summary": "Enhanced search for blogs and authors",
+        "description": "Search for blogs by various criteria or search for authors specifically using author_only parameter",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of blogs per page (default: 10, max: 100)",
+            "minimum": 1,
+            "maximum": 100
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "description": "Username of the blog author",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "description": "Title or partial title of the blog",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Category of the blog (e.g., coding, sports)",
+            "required": false,
+            "type": "string"
+          },          {
+            "name": "tags",
+            "in": "query",
+            "description": "Comma-separated list of tags (e.g., flask,api)",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "author_only",
+            "in": "query",
+            "description": "If true, return authors instead of blogs (requires username parameter)",
+            "required": false,
+            "type": "boolean"
+          }
+        ],        "responses": {
+          "200": {
+            "description": "Search results - blogs or authors based on author_only parameter",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Blog search results (when author_only=false or not provided)",
+                  "properties": {
+                    "blogs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "integer"},
+                          "title": {"type": "string"},
+                          "content": {"type": "string"},
+                          "category": {"type": "string"},
+                          "author": {"type": "string"},
+                          "timestamp": {"type": "string", "format": "date-time"},
+                          "tags": {"type": "array", "items": {"type": "string"}}
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {"type": "integer"},
+                        "per_page": {"type": "integer"},
+                        "total": {"type": "integer"},
+                        "pages": {"type": "integer"},
+                        "has_next": {"type": "boolean"},
+                        "has_prev": {"type": "boolean"},
+                        "next_num": {"type": "integer"},
+                        "prev_num": {"type": "integer"}
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "description": "Author search results (when author_only=true)",
+                  "properties": {
+                    "authors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "integer"},
+                          "username": {"type": "string"},
+                          "blog_count": {"type": "integer"},
+                          "joined_date": {"type": "string", "format": "date-time"},
+                          "profile_url": {"type": "string", "description": "API endpoint for user profile"}
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {"type": "integer"},
+                        "per_page": {"type": "integer"},
+                        "total": {"type": "integer"},
+                        "pages": {"type": "integer"},
+                        "has_next": {"type": "boolean"},
+                        "has_prev": {"type": "boolean"},
+                        "next_num": {"type": "integer"},
+                        "prev_num": {"type": "integer"}
+                      }
+                    },
+                    "search_type": {"type": "string", "enum": ["authors_only"]},
+                    "search_term": {"type": "string"}
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Invalid pagination or query parameters",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Page must be 1 or greater"
+                }
+              }
+            }
+          }
+        }
+        
+      }
+    },    "/api/comments/{blog_id}": {
+      "post": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Add a comment or reply to a blog post",
+        "description": "Create a new comment on a blog post. Include parent_id to reply to an existing comment. YouTube/Instagram style: only 1 level of nesting allowed.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "blog_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID of the blog post"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "type": "string",
+                  "description": "Comment content (max 1000 characters)",
+                  "maxLength": 1000
+                },
+                "parent_id": {
+                  "type": "integer",
+                  "description": "ID of parent comment for replies (optional)"
+                }
+              },
+              "required": [
+                "content"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Comment added successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "comment": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "content": {"type": "string"},
+                    "timestamp": {"type": "string", "format": "date-time"},
+                    "user": {"type": "string"},
+                    "parent_id": {"type": "integer"},
+                    "likes": {"type": "integer"},
+                    "is_reply": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid content or trying to reply to a reply"
+          },
+          "401": {
+            "description": "Unauthorized - login required"
+          },
+          "404": {
+            "description": "Blog or parent comment not found"
+          }
+        }
+      }
+    },    "/api/comments/{comment_id}": {
+      "put": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Edit a comment",
+        "description": "Edit comment content. Only the comment author can edit their comment.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID of the comment to edit"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "type": "string",
+                  "description": "New comment content (max 1000 characters)",
+                  "maxLength": 1000
+                }
+              },
+              "required": ["content"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment updated successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {"type": "string"},
+                "comment": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "content": {"type": "string"},
+                    "timestamp": {"type": "string", "format": "date-time"},
+                    "edited": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid content"
+          },
+          "401": {
+            "description": "Unauthorized - login required"
+          },
+          "403": {
+            "description": "Forbidden - can only edit own comments"
+          },
+          "404": {
+            "description": "Comment not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Delete a comment and its replies",
+        "description": "Delete a comment. Comment author or blog owner can delete. Deleting a parent comment also deletes all its replies.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID of the comment to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment deleted successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Comment and 3 replies deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - login required"
+          },
+          "403": {
+            "description": "Forbidden - can only delete own comments or if blog owner"
+          },
+          "404": {
+            "description": "Comment not found"
+          }
+        }
+      }
+    },
+    "/api/comments/{comment_id}/like": {
+      "post": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Like or unlike a comment",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID of the comment to like/unlike"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment liked/unliked successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {"type": "string"},
+                "liked": {"type": "boolean"},
+                "likes_count": {"type": "integer"}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - login required"
+          },
+          "404": {
+            "description": "Comment not found"
+          }
+        }
+      }
+    },
+    "/api/comments/{comment_id}/replies": {
+      "get": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Get replies for a specific comment (load more)",
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID of the parent comment"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of replies per page (default: 10, max: 20)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated replies",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "replies": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "content": {"type": "string"},
+                      "user": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "integer"},
+                          "username": {"type": "string"}
+                        }
+                      },
+                      "timestamp": {"type": "string", "format": "date-time"},
+                      "likes": {"type": "integer"},
+                      "is_liked": {"type": "boolean"},
+                      "parent_id": {"type": "integer"}
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Comment not found"
+          }
+        }
+      }
+    },
+    "/api/comments/blog/{blog_id}": {
+      "get": {
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Get comments for a blog with pagination and nested replies",
+        "parameters": [
+          {
+            "name": "blog_id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "description": "ID of the blog post"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of comments per page (default: 20, max: 50)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated comments with nested replies",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "content": {"type": "string"},
+                      "user": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "integer"},
+                          "username": {"type": "string"}
+                        }
+                      },
+                      "timestamp": {"type": "string", "format": "date-time"},
+                      "likes": {"type": "integer"},
+                      "is_liked": {"type": "boolean"},
+                      "replies_count": {"type": "integer"},
+                      "has_more_replies": {"type": "boolean"},
+                      "replies": {
+                        "type": "array",
+                        "description": "First 10 replies",
+                        "items": {
+                          "$ref": "#/definitions/Reply"
+                        }
+                      }
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Blog not found"
+          }
+        }
+      }
+    },
+    "/api/likes/blog/{blog_id}": {
+      "post": {
+        "tags": [
+          "Likes"
+        ],
+        "summary": "Like or unlike a blog",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "blog_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unliked blog"
+          },
+          "201": {
+            "description": "Liked blog"
+          },
+          "404": {
+            "description": "Blog not found"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Likes"
+        ],
+        "summary": "Get like count for a blog",
+        "parameters": [
+          {
+            "name": "blog_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Like count",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "likes": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Blog not found"
+          }
+        }
+      }
+    },
+    "/api/likes/comment/{comment_id}": {
+      "post": {
+        "tags": [
+          "Likes"
+        ],
+        "summary": "Like or unlike a comment",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unliked comment"
+          },
+          "201": {
+            "description": "Liked comment"
+          },
+          "404": {
+            "description": "Comment not found"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Likes"
+        ],
+        "summary": "Get like count for a comment",
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Like count",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "likes": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Comment not found"
+          }
+        }
+      }
+    },
+    "/api/blogs/{blog_id}/publish": {
+      "patch": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Publish a draft blog",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "blog_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog published"
+          },
+          "403": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Blog not found"
+          }
+        }
+      }
+    },
+    "/api/blogs/{blog_id}/archive": {
+      "patch": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Archive a blog (soft delete)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "blog_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog archived"
+          },
+          "403": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Blog not found"
+          }        }
+      }
+    },    "/api/blogs/drafts": {
+      "get": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Get paginated draft blogs of the authenticated user",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of drafts per page (default: 10, max: 100)",
+            "minimum": 1,
+            "maximum": 100
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of draft blogs",
+            "schema": {
+              "type": "object",              "properties": {
+                "blogs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "title": {"type": "string"},
+                      "content": {"type": "string"},
+                      "timestamp": {"type": "string", "format": "date-time"},
+                      "category": {"type": "string"},
+                      "tags": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                      }
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"},
+                    "next_num": {"type": "integer"},
+                    "prev_num": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
+    },
+    "/api/blogs/archived": {
+      "get": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Get paginated archived blogs of the authenticated user",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of archived blogs per page (default: 10, max: 100)",
+            "minimum": 1,
+            "maximum": 100
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of archived blogs",
+            "schema": {
+              "type": "object",              "properties": {
+                "blogs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "title": {"type": "string"},
+                      "content": {"type": "string"},
+                      "timestamp": {"type": "string", "format": "date-time"},
+                      "category": {"type": "string"},
+                      "tags": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                      }
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"},
+                    "next_num": {"type": "integer"},
+                    "prev_num": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
+    },
+    "/api/blogs/categories": {
+      "get": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Get list of available blog categories",
+        "description": "Returns a list of predefined blog categories that can be used when creating or updating blogs.",
+        "responses": {
+          "200": {
+            "description": "List of available categories",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "example": [
+                    "technology",
+                    "programming",
+                    "web-development",
+                    "data-science",
+                    "artificial-intelligence",
+                    "business",
+                    "lifestyle"
+                  ]
+                },
+                "total": {
+                  "type": "integer",
+                  "description": "Total number of available categories"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/preferences/categories": {
+      "get": {
+        "tags": [
+          "Preferences"
+        ],
+        "summary": "Get user's category preferences",
+        "description": "Returns the user's selected category preferences for personalized recommendations",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User's category preferences",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "preferred_categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of user's preferred categories"
+                },
+                "total": {
+                  "type": "integer",
+                  "description": "Number of preferred categories"
+                },
+                "available_categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "All available categories"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Preferences"
+        ],
+        "summary": "Set user's category preferences",
+        "description": "Replace all user's category preferences with the provided list (max 10 categories)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "technology", "programming", "web-development", "mobile-development", 
+                      "data-science", "artificial-intelligence", "machine-learning", 
+                      "cybersecurity", "cloud-computing", "devops", "design", "ui-ux", 
+                      "business", "entrepreneurship", "finance", "marketing", "productivity", 
+                      "career", "education", "tutorials", "reviews", "news", "opinion", 
+                      "lifestyle", "health", "travel", "food", "entertainment", "sports", 
+                      "science", "others"
+                    ]
+                  },
+                  "maxItems": 10,
+                  "description": "List of preferred categories (max 10)"
+                }
+              },
+              "required": ["categories"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category preferences updated successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Category preferences updated successfully"
+                },
+                "preferred_categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - Invalid categories or too many categories",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Maximum 10 categories allowed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Preferences"
+        ],
+        "summary": "Add a single category to preferences",
+        "description": "Add one category to user's existing preferences",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "technology", "programming", "web-development", "mobile-development", 
+                    "data-science", "artificial-intelligence", "machine-learning", 
+                    "cybersecurity", "cloud-computing", "devops", "design", "ui-ux", 
+                    "business", "entrepreneurship", "finance", "marketing", "productivity", 
+                    "career", "education", "tutorials", "reviews", "news", "opinion", 
+                    "lifestyle", "health", "travel", "food", "entertainment", "sports", 
+                    "science", "others"
+                  ],
+                  "description": "Category to add to preferences"
+                }
+              },
+              "required": ["category"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Category added to preferences",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Category added to preferences"
+                },
+                "category": {
+                  "type": "string"
+                }
+              }
+            }
+          },          "200": {
+            "description": "Category already in preferences",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Category already in preferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid category or maximum limit reached",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Maximum 10 categories allowed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
+    },
+    "/api/preferences/categories/{category}": {
+      "delete": {
+        "tags": [
+          "Preferences"
+        ],
+        "summary": "Remove a category from preferences",
+        "description": "Remove a specific category from user's preferences",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Category to remove from preferences"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category removed from preferences",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Category removed from preferences"
+                },
+                "category": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found in preferences",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Category not found in preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
+    },
+    "/api/blogs/recommendations": {
+      "get": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Get personalized blog recommendations",
+        "description": "Returns personalized blog recommendations based on user's category preferences with pagination",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of recommendations per page (default: 10, max: 50)",
+            "minimum": 1,
+            "maximum": 50
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Personalized blog recommendations",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "recommendations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "title": {"type": "string"},
+                      "content": {"type": "string", "description": "Preview content (truncated)"},
+                      "timestamp": {"type": "string", "format": "date-time"},
+                      "category": {"type": "string"},
+                      "author": {"type": "string"},
+                      "tags": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                      },
+                      "likes_count": {"type": "integer"}
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"},
+                    "next_num": {"type": "integer"},
+                    "prev_num": {"type": "integer"}
+                  }
+                },
+                "based_on_categories": {
+                  "type": "array",
+                  "items": {"type": "string"},
+                  "description": "Categories used for recommendations"
+                },
+                "total_preferred_categories": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
+    },
+    "/api/blogs/trending": {
+      "get": {
+        "tags": [
+          "Blogs"
+        ],
+        "summary": "Get trending blogs",
+        "description": "Returns trending blogs based on likes and recent activity with pagination",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of trending blogs per page (default: 10, max: 50)",
+            "minimum": 1,
+            "maximum": 50
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trending blogs",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "trending_blogs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "title": {"type": "string"},
+                      "content": {"type": "string", "description": "Preview content (truncated)"},
+                      "timestamp": {"type": "string", "format": "date-time"},
+                      "category": {"type": "string"},
+                      "author": {"type": "string"},
+                      "tags": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                      },
+                      "likes_count": {"type": "integer"},
+                      "trending_score": {"type": "number", "description": "Score used for trending calculation"}
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"},
+                    "next_num": {"type": "integer"},
+                    "prev_num": {"type": "integer"}
+                  }                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get all users for discovery",
+        "description": "Returns paginated list of verified users with search functionality",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of users per page (default: 20, max: 50)",
+            "minimum": 1,
+            "maximum": 50
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "type": "string",
+            "description": "Search users by username"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "users": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "username": {"type": "string"},
+                      "joined_date": {"type": "string", "format": "date-time"},
+                      "blog_count": {"type": "integer"}
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"},
+                    "next_num": {"type": "integer"},
+                    "prev_num": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pagination parameters"
+          }
+        }
+      }
+    },
+    "/api/users/{username}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user profile and their blogs",
+        "description": "Returns user profile information, stats, and paginated list of their published blogs",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Username of the user to get profile for"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number for user's blogs (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of blogs per page (default: 10, max: 50)",
+            "minimum": 1,
+            "maximum": 50
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile with blogs",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "username": {"type": "string"},
+                    "joined_date": {"type": "string", "format": "date-time"},
+                    "is_verified": {"type": "boolean"}
+                  }
+                },                "stats": {
+                  "type": "object",
+                  "properties": {
+                    "total_blogs": {"type": "integer"},
+                    "total_likes_received": {"type": "integer"},
+                    "total_views_received": {"type": "integer"},
+                    "followers_count": {"type": "integer"},
+                    "following_count": {"type": "integer"}
+                  }
+                },
+                "blogs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "title": {"type": "string"},
+                      "content": {"type": "string", "description": "Content preview (first 200 characters)"},
+                      "timestamp": {"type": "string", "format": "date-time"},
+                      "category": {"type": "string"},
+                      "tags": {"type": "array", "items": {"type": "string"}},
+                      "likes_count": {"type": "integer"},
+                      "views_count": {"type": "integer"}
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"},
+                    "next_num": {"type": "integer"},
+                    "prev_num": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          },          "404": {
+            "description": "User not found"
+          },
+          "400": {
+            "description": "Invalid pagination parameters"
+          }
+        }
+      }
+    },
+    "/api/follows/{user_id}": {
+      "post": {
+        "tags": ["Follows"],
+        "summary": "Follow or unfollow a user",
+        "description": "Follow a user if not already following, or unfollow if already following",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "type": "integer",
+            "required": true,
+            "description": "ID of the user to follow/unfollow"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User unfollowed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {"type": "string"},
+                "is_following": {"type": "boolean", "example": false},
+                "followers_count": {"type": "integer"},
+                "following_count": {"type": "integer"}
+              }
+            }
+          },
+          "201": {
+            "description": "User followed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {"type": "string"},
+                "is_following": {"type": "boolean", "example": true},
+                "followers_count": {"type": "integer"},
+                "following_count": {"type": "integer"}
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot follow yourself"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "401": {
+            "description": "Unauthorized - login required"
+          }
+        }
+      }
+    },
+    "/api/follows/check/{user_id}": {
+      "get": {
+        "tags": ["Follows"],
+        "summary": "Check if current user is following a specific user",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "type": "integer",
+            "required": true,
+            "description": "ID of the user to check follow status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Follow status",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "is_following": {"type": "boolean"},
+                "is_self": {"type": "boolean"},
+                "username": {"type": "string"}
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "401": {
+            "description": "Unauthorized - login required"
+          }
+        }
+      }
+    },
+    "/api/follows/followers/{user_id}": {
+      "get": {
+        "tags": ["Follows"],
+        "summary": "Get list of users who follow this user",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "type": "integer",
+            "required": true,
+            "description": "ID of the user whose followers to get"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of followers per page (default: 20, max: 50)",
+            "minimum": 1,
+            "maximum": 50
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of followers",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "followers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "username": {"type": "string"},
+                      "joined_date": {"type": "string", "format": "date-time"}
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"},
+                    "next_num": {"type": "integer"},
+                    "prev_num": {"type": "integer"}
+                  }
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "username": {"type": "string"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "400": {
+            "description": "Invalid pagination parameters"
+          }
+        }
+      }
+    },
+    "/api/follows/following/{user_id}": {
+      "get": {
+        "tags": ["Follows"],
+        "summary": "Get list of users that this user follows",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "type": "integer",
+            "required": true,
+            "description": "ID of the user whose following list to get"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (default: 1)",
+            "minimum": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of following per page (default: 20, max: 50)",
+            "minimum": 1,
+            "maximum": 50
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users being followed",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "following": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "username": {"type": "string"},
+                      "joined_date": {"type": "string", "format": "date-time"}
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"},
+                    "has_next": {"type": "boolean"},
+                    "has_prev": {"type": "boolean"},
+                    "next_num": {"type": "integer"},
+                    "prev_num": {"type": "integer"}
+                  }
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "username": {"type": "string"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "400": {
+            "description": "Invalid pagination parameters"
+          }
+        }
+      }
+    },
+    "/api/follows/stats/{user_id}": {
+      "get": {
+        "tags": ["Follows"],
+        "summary": "Get follower and following counts for a user",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "type": "integer",
+            "required": true,
+            "description": "ID of the user to get follow stats"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Follow statistics",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "username": {"type": "string"}
+                  }
+                },
+                "followers_count": {"type": "integer"},
+                "following_count": {"type": "integer"}
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Reply": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "integer"},
+        "content": {"type": "string"},
+        "user": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "integer"},
+            "username": {"type": "string"}
+          }
+        },
+        "timestamp": {"type": "string", "format": "date-time"},
+        "likes": {"type": "integer"},
+        "is_liked": {"type": "boolean"},
+        "parent_id": {"type": "integer"}
+      }
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "integer"},
+        "username": {"type": "string"},
+        "email": {"type": "string"},
+        "joined_date": {"type": "string", "format": "date-time"},
+        "is_verified": {"type": "boolean"}
+      }
+    },
+    "Blog": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "integer"},
+        "title": {"type": "string"},
+        "content": {"type": "string"},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "category": {"type": "string"},
+        "author": {"type": "string"},
+        "tags": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "likes_count": {"type": "integer"},
+        "views_count": {"type": "integer"}
+      }
+    },
+    "Pagination": {
+      "type": "object",      "properties": {
+        "page": {"type": "integer"},
+        "per_page": {"type": "integer"},
+        "total": {"type": "integer"},
+        "pages": {"type": "integer"},
+        "has_next": {"type": "boolean"},
+        "has_prev": {"type": "boolean"},
+        "next_num": {"type": "integer"},
+        "prev_num": {"type": "integer"}
+      }
+    }
+  }
+}
