@@ -108,7 +108,7 @@ def refresh():
         }), 401
 
 
-@auth_bp.route('/reset-password-request', methods=['GET'])
+@auth_bp.route('/reset-password-request', methods=['POST'])
 def reset_password_request():
     data = request.get_json()
     email = data.get('email')
@@ -116,7 +116,7 @@ def reset_password_request():
 
     if user:
         token = generate_confirmation_token(user.email)
-        reset_url = f"http://localhost:5000/api/auth/reset-password/{token}"
+        reset_url = f"http://localhost:3000/reset-password/{token}"
         html_body = f"<p>You requested a password reset. Click the link below:</p><p><a href='{reset_url}'>{reset_url}</a></p>"
         send_email(user.email, "Password Reset Request", html_body)
 
@@ -142,6 +142,26 @@ def reset_password(token):
     user.set_password(new_password)
     db.session.commit()
     return jsonify({"message": "Your password has been reset successfully."}), 200
+
+@auth_bp.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        return jsonify({
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "is_verified": user.is_verified
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 
