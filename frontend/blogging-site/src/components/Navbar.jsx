@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import RotatingText from './RotatingText';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,9 +31,25 @@ const Navbar = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
                 </div>
-                <h1 className="text-2xl font-bold" style={{ color: '#670626' }}>
-                  BlogSite
-                </h1>
+                <div className="flex items-center">
+                  <span className="text-2xl font-bold mr-1" style={{ color: '#670626' }}>
+                    Type N
+                  </span>
+                  <RotatingText
+                    texts={['Tell', 'Tale', 'Tea']}
+                    mainClassName="px-2 py-1 rounded-lg overflow-hidden flex items-center justify-center"
+                    style={{ backgroundColor: '#FFBDC5', color: '#670626' }}
+                    staggerFrom="last"
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "-120%" }}
+                    staggerDuration={0.025}
+                    splitLevelClassName="overflow-hidden"
+                    transition={{ type: "spring", damping: 30, stiffness: 400 }}
+                    rotationInterval={2500}
+                    elementLevelClassName="text-2xl font-bold"
+                  />
+                </div>
               </div>
             </Link>
           </div>
